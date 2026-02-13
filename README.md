@@ -12,8 +12,16 @@ A professional-grade file encryption application for Windows using AES-256-GCM w
 - **Zero-knowledge architecture** - Keys never stored on disk
 
 ### Authentication Factors
-1. **Password** - Strong password-based authentication
-2. **YubiKey** - Hardware security key support via OATH3. 
+SecureVault supports multiple authentication configurations:
+
+1. **Password-only mode**
+   - Standard encryption using a user password
+   - Key derived via Argon2id
+
+2. **Password + keyfile mode**
+   - Combines the password with a user-supplied keyfile
+   - The keyfile acts as an additional cryptographic factor
+   - Both the password and the keyfile are required for decryption
 
 ### User Interface
 - Modern WPF interface with real-time validation
@@ -29,7 +37,7 @@ A professional-grade file encryption application for Windows using AES-256-GCM w
 - Administrator rights (for secure deletion feature)
 
 ### Optional Hardware
-- YubiKey 5 series or newer (for YubiKey authentication)
+- YubiKey 5 series or newer (Planned for YubiKey authentication)
 
 ### Software Dependencies
 All NuGet packages are automatically restored during build:
@@ -209,12 +217,6 @@ masterKey = HMAC-SHA256(
 - Configure OATH credential on YubiKey
 - Try different USB port
 - Check Windows Device Manager for driver issues
-
-### "Invalid TOTP Code"
-- Verify your device's time is synchronized
-- Check you're using the correct TOTP secret
-- Ensure authenticator app is updated
-- Try the next code (30-second window)
 
 ### "Decryption Failed"
 - Verify you're using the EXACT same authentication factors
