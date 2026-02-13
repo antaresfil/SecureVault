@@ -174,7 +174,6 @@ masterKey = HMAC-SHA256(
 **Requirements:**
 - YubiKey 5 series or newer
 - YubiKey Manager installed
-- OATH credential configured
 
 **Setup Steps:**
 1. Install YubiKey Manager: https://www.yubico.com/support/download/yubikey-manager/
@@ -190,21 +189,18 @@ masterKey = HMAC-SHA256(
 
 ### For Maximum Security
 1. **Use at least 2 authentication factors** for sensitive files
-2. **Store TOTP secrets** in a password manager
-3. **Keep backups** of authentication credentials
-4. **Test decryption** immediately after encryption
-5. **Use secure deletion** for original sensitive files
-6. **Never share** authentication factors
+2. **Keep backups** of authentication credentials
+3. **Test decryption** immediately after encryption
+4. **Use secure deletion** for original sensitive files
+5. **Never share** authentication factors
 
 ### Backup Strategy
 1. **Password**: Store in password manager
-2. **TOTP Secret**: Save in password manager + secure offline backup
-3. **YubiKey**: Consider a backup YubiKey with same credentials
-4. **Encrypted files**: Regular backups to external storage
+2. **YubiKey**: Consider a backup YubiKey with same credentials
+3. **Encrypted files**: Regular backups to external storage
 
 ### What NOT to do
 - ❌ Don't encrypt files without testing decryption first
-- ❌ Don't lose your TOTP secret
 - ❌ Don't forget which factors you used for encryption
 - ❌ Don't share authentication factors
 - ❌ Don't rely on memory - save your secrets securely
@@ -221,7 +217,6 @@ masterKey = HMAC-SHA256(
 ### "Decryption Failed"
 - Verify you're using the EXACT same authentication factors
 - Check password for typos
-- Ensure TOTP secret matches encryption secret
 - Confirm YubiKey is the same one used for encryption
 - File may be corrupted - restore from backup
 
