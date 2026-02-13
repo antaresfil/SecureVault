@@ -7,15 +7,13 @@ A professional-grade file encryption application for Windows using AES-256-GCM w
 ### Security
 - **AES-256-GCM encryption** - NSA Suite B approved authenticated encryption
 - **Argon2id key derivation** - Winner of the Password Hashing Competition
-- **Multi-factor authentication** - Combine password, TOTP, and YubiKey
 - **Authenticated encryption** - Prevents tampering and ensures data integrity
 - **Secure file deletion** - 3-pass overwrite of original files
 - **Zero-knowledge architecture** - Keys never stored on disk
 
 ### Authentication Factors
 1. **Password** - Strong password-based authentication
-2. **TOTP** - Time-based OTP (Google Authenticator, Authy, Microsoft Authenticator)
-3. **YubiKey** - Hardware security key support via OATH
+2. **YubiKey** - Hardware security key support via OATH3. 
 
 ### User Interface
 - Modern WPF interface with real-time validation
@@ -91,11 +89,11 @@ All NuGet packages are automatically restored during build:
 1. Click **"Browse..."** and select your file
 2. Choose your authentication factors:
    - **Password**: Enter a strong password
-   - **TOTP**: Click "Generate New" to create a secret, add to authenticator app, enter 6-digit code
+   - **KeyFile**: Click file
    - **YubiKey**: Click "Detect YubiKey" and insert your key
 3. Select **"Encrypt File"**
 4. Optionally enable **"Securely delete original file"**
-5. Click **"🔒 Execute"**
+5. Click **"🔒 Start"**
 6. Output file will be created with `.svlt` extension
 
 ### Decrypting a File
@@ -103,10 +101,9 @@ All NuGet packages are automatically restored during build:
 1. Select your `.svlt` encrypted file
 2. Enter the **SAME** authentication factors used during encryption:
    - Same password
-   - Same TOTP secret + current code
    - Same YubiKey
 3. Select **"Decrypt File"**
-4. Click **"🔒 Execute"**
+4. Click **"🔒 Start"**
 5. Original file will be restored
 
 ## 🔐 Security Details
@@ -162,26 +159,9 @@ masterKey = HMAC-SHA256(
 
 ⚠️ **Warning**: If you lose your password, files CANNOT be recovered!
 
-### TOTP Setup (Google Authenticator)
 
-1. Click **"Generate New"** in SecureVault
-2. Copy the displayed secret
-3. Open your authenticator app (Google Authenticator, Authy, etc.)
-4. Add a new account
-5. Enter the secret manually
-6. **Save the secret in a password manager**
-7. Enter the 6-digit code when encrypting/decrypting
 
-⚠️ **Critical**: Save the TOTP secret! Without it, you cannot decrypt!
-
-**Compatible Apps:**
-- Google Authenticator
-- Microsoft Authenticator
-- Authy
-- 1Password
-- Bitwarden
-
-### YubiKey Setup
+### YubiKey Setup (Planned)
 
 **Requirements:**
 - YubiKey 5 series or newer
@@ -254,7 +234,6 @@ masterKey = HMAC-SHA256(
 ### Cryptography Standards
 - **Encryption**: AES-256-GCM (NIST FIPS 197, NIST SP 800-38D)
 - **Key Derivation**: Argon2id (RFC 9106)
-- **TOTP**: RFC 6238
 - **Random Number Generation**: System.Security.Cryptography.RandomNumberGenerator
 
 ### Performance
@@ -302,7 +281,6 @@ This software is provided "as is" without warranty. While it uses industry-stand
 
 - [NIST Cryptographic Standards](https://csrc.nist.gov/)
 - [Argon2 Specification](https://github.com/P-H-C/phc-winner-argon2)
-- [TOTP RFC 6238](https://tools.ietf.org/html/rfc6238)
 - [YubiKey Documentation](https://developers.yubico.com/)
 
 ## 📞 Support
@@ -317,4 +295,12 @@ For issues, questions, or feature requests:
 
 **Version**: 1.0.0  
 **Last Updated**: February 2026  
-**Author**: SecureVault Development Team
+**Author**: Massimo Parisi - SecureVault Development
+
+
+**PLANNED**
+Additional authentication:
+- YubiKey hardware authentication*
+
+\* Feature planned for a future release.
+
