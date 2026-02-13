@@ -1,0 +1,168 @@
+using System;
+using System.IO;
+using System.IO.Compression;
+using System.Linq;
+
+namespace SecureVault.Core
+{
+    /// <summary>
+    /// Helper per gestire crittografia/decrittografia di cartelle
+    /// </summary>
+    public static class FolderCryptoHelper
+    {
+        // Limiti di sicurezza (configurabili)
+        private const long MaxFolderSizeBytes = 4L * 1024 * 1024 * 1024; // 4 GB
+        private const long WarningSizeBytes = 1L * 1024 * 1024 * 1024;   // 1 GB (avviso)
+        private const int MaxFileCount = 10000;  // Numero massimo file
+
+        public class FolderAnalysis
+        {
+            public bool IsValid { get; set; }
+            public long TotalSizeBytes { get; set; }
+            public int FileCount { get; set; }
+            public string? ErrorMessage { get; set; }
+            public bool RequiresWarning { get; set; }
+            public string? WarningMessage { get; set; }
+
+            public string GetSizeFormatted()
+            {
+                if (TotalSizeBytes < 1024)
+                    return $"{TotalSizeBytes} bytes";
+                else if (TotalSizeBytes < 1024 * 1024)
+                    return $"{TotalSizeBytes / 1024.0:F2} KB";
+                else if (TotalSizeBytes < 1024 * 1024 * 1024)
+                    return $"{TotalSizeBytes / (1024.0 * 1024):F2} MB";
+                else
+                    return $"{TotalSizeBytes / (1024.0 * 1024 * 1024):F2} GB";
+            }
+        }
+
+        /// <summary>
+        /// Analizza una cartella prima della crittografia
+        /// </summary>
+        public static FolderAnalysis AnalyzeFolder(string folderPath)
+        {
+            var analysis = new FolderAnalysis { IsValid = false };
+
+            try
+            {
+                if (!Directory.Exists(folderPath))
+                {
+                    analysis.ErrorMessage = "Folder does not exist.";
+                    return analysis;
+                }
+
+                var files = Directory.GetFiles(folderPath, "*", SearchOption.AllDirectories);
+                analysis.FileCount = files.Length;
+
+                if (analysis.FileCount == 0)
+                {
+                    analysis.ErrorMessage = "Folder is empty.";
+                    return analysis;
+                }
+
+                if (analysis.FileCount > MaxFileCount)
+                {
+                    analysis.ErrorMessage = $"Folder contains too many files ({analysis.FileCount}). Maximum: {MaxFileCount}";
+                    return analysis;
+                }
+
+                // Calcola dimensione totale
+                analysis.TotalSizeBytes = files.Sum(f => new FileInfo(f).Length);
+
+                if (analysis.TotalSizeBytes > MaxFolderSizeBytes)
+                {
+                    analysis.ErrorMessage = $"Folder too large ({analysis.GetSizeFormatted()}). Maximum: {MaxFolderSizeBytes / (1024.0 * 1024 * 1024):F1} GB";
+                    return analysis;
+                }
+
+                // Avviso per cartelle grandi
+                if (analysis.TotalSizeBytes > WarningSizeBytes)
+                {
+                    analysis.RequiresWarning = true;
+                    analysis.WarningMessage = $"Large folder ({analysis.GetSizeFormatted()}, {analysis.FileCount} files). This may take several minutes and require significant RAM. Continue?";
+                }
+
+                analysis.IsValid = true;
+                return analysis;
+            }
+            catch (UnauthorizedAccessException)
+            {
+                analysis.ErrorMessage = "Access denied. Check folder permissions.";
+                return analysis;
+            }
+            catch (Exception ex)
+            {
+                analysis.ErrorMessage = $"Error analyzing folder: {ex.Message}";
+                return analysis;
+            }
+        }
+
+        /// <summary>
+        /// Crea un archivio ZIP temporaneo della cartella
+        /// </summary>
+        public static string CreateTemporaryZip(string folderPath, string? tempPath = null)
+        {
+            if (string.IsNullOrEmpty(tempPath))
+            {
+                tempPath = Path.Combine(Path.GetTempPath(), $"SecureVault_{Guid.NewGuid()}.zip");
+            }
+
+            try
+            {
+                // Crea ZIP con compressione ottimale
+                ZipFile.CreateFromDirectory(folderPath, tempPath, CompressionLevel.Optimal, false);
+                return tempPath;
+            }
+            catch (Exception ex)
+            {
+                // Pulisci il file temporaneo se fallisce
+                if (File.Exists(tempPath))
+                {
+                    try { File.Delete(tempPath); } catch { }
+                }
+                throw new Exception($"Failed to create ZIP archive: {ex.Message}", ex);
+            }
+        }
+
+        /// <summary>
+        /// Estrae uno ZIP in una cartella
+        /// </summary>
+        public static void ExtractZipToFolder(string zipPath, string outputFolder)
+        {
+            try
+            {
+                if (!Directory.Exists(outputFolder))
+                {
+                    Directory.CreateDirectory(outputFolder);
+                }
+
+                ZipFile.ExtractToDirectory(zipPath, outputFolder, overwriteFiles: false);
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Failed to extract archive: {ex.Message}", ex);
+            }
+        }
+
+        /// <summary>
+        /// Pulisce file temporanei in modo sicuro
+        /// </summary>
+        public static void CleanupTempFile(string filePath)
+        {
+            if (!string.IsNullOrEmpty(filePath) && File.Exists(filePath))
+            {
+                try
+                {
+                    // Usa secure delete per i file temporanei
+                    CryptoEngine.SecureDelete(filePath, passes: 1); // 1 pass è sufficiente per temp
+                }
+                catch
+                {
+                    // Fallback: cancellazione normale
+                    try { File.Delete(filePath); } catch { }
+                }
+            }
+        }
+    }
+}

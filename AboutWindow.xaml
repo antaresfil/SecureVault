@@ -1,0 +1,229 @@
+<Window x:Class="SecureVault.AboutWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="About SecureVault" 
+        Height="600" Width="700"
+        WindowStartupLocation="CenterScreen"
+        ResizeMode="NoResize"
+        Background="#F5F5F5">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <Border Grid.Row="0" Background="#1976D2" Padding="30,25">
+            <StackPanel HorizontalAlignment="Center">
+                <TextBlock Text="🔒 SecureVault" FontSize="32" FontWeight="Bold" Foreground="White" HorizontalAlignment="Center"/>
+                <TextBlock Text="Multi-Factor File Encryption System" FontSize="14" Foreground="#E3F2FD" Margin="0,5,0,0" HorizontalAlignment="Center"/>
+                <TextBlock x:Name="VersionText" Text="Version 1.0.7 - February 13, 2026" FontSize="13" Foreground="#B3E5FC" Margin="0,8,0,0" HorizontalAlignment="Center" FontWeight="SemiBold"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Content -->
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="30,20">
+            <StackPanel>
+                
+                <!-- Developer Info -->
+                <Border Background="White" Padding="20" CornerRadius="8" Margin="0,0,0,15">
+                    <StackPanel>
+                        <TextBlock Text="👨‍💻 Developer Information" FontSize="18" FontWeight="Bold" Foreground="#1976D2" Margin="0,0,0,15"/>
+                        
+                        <Grid Margin="0,0,0,8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="120"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="Developer:" FontWeight="SemiBold" Grid.Column="0"/>
+                            <TextBlock Text="Massimo Parisi" Grid.Column="1"/>
+                        </Grid>
+
+                        <Grid Margin="0,0,0,8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="120"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="Email:" FontWeight="SemiBold" Grid.Column="0"/>
+                            <TextBlock Grid.Column="1">
+                                <Hyperlink NavigateUri="mailto:mpsecurevault@noxfarm.com" RequestNavigate="Hyperlink_RequestNavigate">
+                                    <Run Text="mpsecurevault@noxfarm.com"/>
+                                </Hyperlink>
+                            </TextBlock>
+                        </Grid>
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="120"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="Copyright:" FontWeight="SemiBold" Grid.Column="0"/>
+                            <TextBlock Text="© 2026 Massimo Parisi. All rights reserved." Grid.Column="1"/>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <!-- License -->
+                <Border Background="White" Padding="20" CornerRadius="8" Margin="0,0,0,15">
+                    <StackPanel>
+                        <TextBlock Text="📜 License" FontSize="18" FontWeight="Bold" Foreground="#1976D2" Margin="0,0,0,15"/>
+                        
+                        <TextBlock TextWrapping="Wrap" Margin="0,0,0,10">
+                            <Run FontWeight="Bold">FREE FOR PERSONAL USE</Run>
+                        </TextBlock>
+                        
+                        <TextBlock TextWrapping="Wrap" Margin="0,0,0,15" LineHeight="20">
+                            This software is provided free of charge for personal, non-commercial use only.
+                        </TextBlock>
+
+                        <TextBlock Text="✅ You ARE allowed to:" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                        <TextBlock TextWrapping="Wrap" Margin="15,0,0,5" LineHeight="18">
+                            • Use this software for personal purposes
+                        </TextBlock>
+                        <TextBlock TextWrapping="Wrap" Margin="15,0,0,5" LineHeight="18">
+                            • Install on multiple personal devices
+                        </TextBlock>
+                        <TextBlock TextWrapping="Wrap" Margin="15,0,0,15" LineHeight="18">
+                            • Share the original unmodified installer with others
+                        </TextBlock>
+
+                        <TextBlock Text="❌ You are NOT allowed to:" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                        <TextBlock TextWrapping="Wrap" Margin="15,0,0,5" LineHeight="18">
+                            • Use this software for commercial purposes
+                        </TextBlock>
+                        <TextBlock TextWrapping="Wrap" Margin="15,0,0,5" LineHeight="18">
+                            • Modify, reverse engineer, or decompile the software
+                        </TextBlock>
+                        <TextBlock TextWrapping="Wrap" Margin="15,0,0,5" LineHeight="18">
+                            • Redistribute modified versions
+                        </TextBlock>
+                        <TextBlock TextWrapping="Wrap" Margin="15,0,0,5" LineHeight="18">
+                            • Remove or alter copyright notices
+                        </TextBlock>
+                        <TextBlock TextWrapping="Wrap" Margin="15,0,0,15" LineHeight="18">
+                            • Sell or charge for this software
+                        </TextBlock>
+
+                        <Border Background="#FFF3E0" Padding="12" CornerRadius="4" Margin="0,5,0,0">
+                            <StackPanel>
+                                <TextBlock Text="💼 Commercial Use" FontWeight="Bold" Foreground="#E65100" Margin="0,0,0,5"/>
+                                <TextBlock TextWrapping="Wrap" Foreground="#5D4037" LineHeight="18">
+                                    For commercial use, business environments, or enterprise deployment, please contact the developer at mpsecurevault@noxfarm.com for licensing options.
+                                </TextBlock>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </Border>
+
+                <!-- Disclaimer -->
+                <Border Background="#FFF3E0" BorderBrush="#FF9800" BorderThickness="2" Padding="20" CornerRadius="8" Margin="0,0,0,15">
+                    <StackPanel>
+                        <TextBlock Text="⚠️ CRITICAL WARNINGS &amp; DISCLAIMER" FontSize="18" FontWeight="Bold" Foreground="#D32F2F" Margin="0,0,0,15"/>
+                        
+                        <TextBlock TextWrapping="Wrap" LineHeight="20" Margin="0,0,0,10">
+                            <Run FontWeight="Bold" Foreground="#D32F2F">🔐 PASSWORD AND KEYFILE LOSS:</Run>
+                            <LineBreak/>
+                            If you lose your password or keyfile, your encrypted data is <Run FontWeight="Bold">PERMANENTLY UNRECOVERABLE</Run>. There is NO backdoor, NO recovery method, NO way to decrypt without the correct credentials. <Run FontWeight="Bold">Store your passwords and keyfiles safely!</Run>
+                        </TextBlock>
+
+                        <TextBlock TextWrapping="Wrap" LineHeight="20" Margin="0,0,0,10">
+                            <Run FontWeight="Bold" Foreground="#D32F2F">💾 DATA BACKUP REQUIRED:</Run>
+                            <LineBreak/>
+                            ALWAYS maintain backups of your original files before encryption. While this software has been thoroughly tested, the developer is <Run FontWeight="Bold">NOT responsible for any data loss, corruption, or file damage</Run> that may occur during encryption, decryption, or secure deletion operations.
+                        </TextBlock>
+
+                        <TextBlock TextWrapping="Wrap" LineHeight="20" Margin="0,0,0,10">
+                            <Run FontWeight="Bold" Foreground="#D32F2F">📊 FILE SIZE LIMITATIONS:</Run>
+                            <LineBreak/>
+                            Large files (especially >1GB) may cause memory issues or system instability depending on your hardware. Test with small files first. The developer is <Run FontWeight="Bold">NOT liable for system crashes, memory errors, or data corruption</Run> when processing large files or folders.
+                        </TextBlock>
+
+                        <TextBlock TextWrapping="Wrap" LineHeight="20" Margin="0,0,0,10">
+                            <Run FontWeight="Bold" Foreground="#D32F2F">🗑️ SECURE DELETE IS PERMANENT:</Run>
+                            <LineBreak/>
+                            When "Secure Delete" is enabled, the original file is <Run FontWeight="Bold">PERMANENTLY DESTROYED</Run> with military-grade overwriting. This action is <Run FontWeight="Bold">IRREVERSIBLE</Run>. Recovery is impossible even with professional data recovery tools.
+                        </TextBlock>
+
+                        <Border Background="#FFEBEE" Padding="12" CornerRadius="4" Margin="0,10,0,10">
+                            <StackPanel>
+                                <TextBlock Text="📜 LEGAL DISCLAIMER" FontWeight="Bold" Foreground="#C62828" Margin="0,0,0,5"/>
+                                <TextBlock TextWrapping="Wrap" FontSize="11" LineHeight="16">
+                                    <Run FontWeight="SemiBold">NO WARRANTY:</Run> This software is provided "AS IS" without warranty of any kind, either express or implied, including but not limited to the warranties of merchantability, fitness for a particular purpose, or non-infringement.
+                                    <LineBreak/><LineBreak/>
+                                    <Run FontWeight="SemiBold">LIMITATION OF LIABILITY:</Run> In no event shall the developer (Massimo Parisi) be liable for any claim, damages, or other liability, whether in an action of contract, tort or otherwise, arising from, out of or in connection with the software or the use or other dealings in the software.
+                                    <LineBreak/><LineBreak/>
+                                    <Run FontWeight="SemiBold">USE AT YOUR OWN RISK:</Run> You assume full responsibility for the use of this software. The developer is not responsible for any data loss, file corruption, system failures, security breaches, lost passwords, or any other damages direct or indirect.
+                                </TextBlock>
+                            </StackPanel>
+                        </Border>
+
+                        <TextBlock TextWrapping="Wrap" LineHeight="18" FontWeight="SemiBold" Foreground="#D32F2F" HorizontalAlignment="Center" Margin="0,10,0,0">
+                            BY USING THIS SOFTWARE, YOU ACKNOWLEDGE AND ACCEPT ALL RISKS AND DISCLAIMERS ABOVE.
+                        </TextBlock>
+                    </StackPanel>
+                </Border>
+
+                <!-- Best Practices -->
+                <Border Background="White" Padding="20" CornerRadius="8" Margin="0,0,0,15">
+                    <StackPanel>
+                        <TextBlock Text="✅ BEST PRACTICES (STRONGLY RECOMMENDED)" FontSize="16" FontWeight="Bold" Foreground="#388E3C" Margin="0,0,0,15"/>
+                        
+                        <TextBlock TextWrapping="Wrap" Margin="0,0,0,8">
+                            <Run FontWeight="Bold">1. Test First:</Run> Always test encryption/decryption with non-critical files before using on important data.
+                        </TextBlock>
+                        
+                        <TextBlock TextWrapping="Wrap" Margin="0,0,0,8">
+                            <Run FontWeight="Bold">2. Backup Everything:</Run> Keep multiple backups of original files in different locations before encrypting.
+                        </TextBlock>
+                        
+                        <TextBlock TextWrapping="Wrap" Margin="0,0,0,8">
+                            <Run FontWeight="Bold">3. Store Credentials Safely:</Run> Use a password manager for passwords. Keep keyfiles in multiple secure locations.
+                        </TextBlock>
+                        
+                        <TextBlock TextWrapping="Wrap" Margin="0,0,0,8">
+                            <Run FontWeight="Bold">4. Verify Decryption:</Run> Always test that encrypted files can be decrypted BEFORE deleting originals.
+                        </TextBlock>
+                        
+                        <TextBlock TextWrapping="Wrap" Margin="0,0,0,8">
+                            <Run FontWeight="Bold">5. Watch File Sizes:</Run> For files >500MB, ensure you have sufficient RAM and disk space.
+                        </TextBlock>
+                        
+                        <TextBlock TextWrapping="Wrap">
+                            <Run FontWeight="Bold">6. Use Secure Delete Carefully:</Run> Only enable "Secure Delete" when you are absolutely certain you have a working encrypted copy.
+                        </TextBlock>
+                    </StackPanel>
+                </Border>
+
+                <!-- Technical Info -->
+                <Border Background="#E3F2FD" Padding="15" CornerRadius="4" Margin="0,15,0,0">
+                    <StackPanel>
+                        <TextBlock Text="🔐 Encryption Details" FontWeight="Bold" Foreground="#1976D2" Margin="0,0,0,8"/>
+                        <TextBlock TextWrapping="Wrap" FontSize="12" Foreground="#555" LineHeight="18">
+                            • Algorithm: AES-256-GCM
+                        </TextBlock>
+                        <TextBlock TextWrapping="Wrap" FontSize="12" Foreground="#555" LineHeight="18">
+                            • Key Derivation: Argon2id (OWASP recommended parameters)
+                        </TextBlock>
+                        <TextBlock TextWrapping="Wrap" FontSize="12" Foreground="#555" LineHeight="18">
+                            • Authentication: 128-bit GCM tag
+                        </TextBlock>
+                        <TextBlock TextWrapping="Wrap" FontSize="12" Foreground="#555" LineHeight="18">
+                            • Secure Delete: DoD 5220.22-M (3-pass overwrite)
+                        </TextBlock>
+                    </StackPanel>
+                </Border>
+
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- Footer -->
+        <Border Grid.Row="2" Background="White" Padding="20" BorderThickness="0,1,0,0" BorderBrush="#E0E0E0">
+            <Grid>
+                <TextBlock Text="Made with ❤️ for secure file protection" FontSize="12" Foreground="#999" VerticalAlignment="Center"/>
+                <Button Content="Close" Width="120" HorizontalAlignment="Right" Click="CloseButton_Click"/>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

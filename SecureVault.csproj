@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <AssemblyName>SecureVault</AssemblyName>
+    <Version>1.0.7</Version>
+    <Authors>Massimo Parisi</Authors>
+    <Company>Massimo Parisi</Company>
+    <Product>SecureVault</Product>
+    <Copyright>Copyright © 2026 Massimo Parisi</Copyright>
+    <Description>Multi-Factor File Encryption System</Description>
+    <!-- Icona commentata temporaneamente - decommentare quando aggiungi icon.ico -->
+    <!-- <ApplicationIcon>Resources\icon.ico</ApplicationIcon> -->
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Konscious.Security.Cryptography.Argon2" Version="1.3.0" />
+    <PackageReference Include="Otp.NET" Version="1.4.0" />
+    <PackageReference Include="Yubico.YubiKey" Version="1.15.1" />
+  </ItemGroup>
+
+</Project>
