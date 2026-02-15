@@ -1,3 +1,4 @@
+using System.Reflection;
 using System.Diagnostics;
 using System.Windows;
 using System.Windows.Navigation;
@@ -9,6 +10,19 @@ namespace SecureVault
         public AboutWindow()
         {
             InitializeComponent();
+            VersionText.Text = $"Version {GetAppVersion()}";
+        }
+
+        private static string GetAppVersion()
+        {
+            // Prefer a human-friendly version string (e.g., SemVer) set via <InformationalVersion>.
+            var asm = Assembly.GetExecutingAssembly();
+            var info = asm.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
+            if (!string.IsNullOrWhiteSpace(info))
+                return info;
+
+            // Fallback to the assembly version.
+            return asm.GetName().Version?.ToString() ?? "0.0.0";
         }
 
         private void CloseButton_Click(object sender, RoutedEventArgs e)

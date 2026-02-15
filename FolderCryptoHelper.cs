@@ -128,25 +128,86 @@ namespace SecureVault.Core
         /// <summary>
         /// Estrae uno ZIP in una cartella
         /// </summary>
-        public static void ExtractZipToFolder(string zipPath, string outputFolder)
+        
+public static void ExtractZipToFolder(string zipPath, string outputFolder)
+{
+    try
+    {
+        if (!Directory.Exists(outputFolder))
         {
-            try
-            {
-                if (!Directory.Exists(outputFolder))
-                {
-                    Directory.CreateDirectory(outputFolder);
-                }
-
-                ZipFile.ExtractToDirectory(zipPath, outputFolder, overwriteFiles: false);
-            }
-            catch (Exception ex)
-            {
-                throw new Exception($"Failed to extract archive: {ex.Message}", ex);
-            }
+            Directory.CreateDirectory(outputFolder);
         }
 
-        /// <summary>
-        /// Pulisce file temporanei in modo sicuro
+        SafeExtractZipToFolder(zipPath, outputFolder);
+    }
+    catch (Exception ex)
+    {
+        throw new Exception($"Failed to extract archive: {ex.Message}", ex);
+    }
+}
+
+/// <summary>
+/// Safe ZIP extraction (prevents Zip Slip and avoids overwriting existing files)
+/// </summary>
+private static void SafeExtractZipToFolder(string zipPath, string outputFolder)
+{
+    string baseFull = Path.GetFullPath(outputFolder);
+    if (!baseFull.EndsWith(Path.DirectorySeparatorChar))
+        baseFull += Path.DirectorySeparatorChar;
+
+    using (var archive = ZipFile.OpenRead(zipPath))
+    {
+        foreach (var entry in archive.Entries)
+        {
+            // Normalize to a destination path
+            string destinationPath = Path.GetFullPath(Path.Combine(outputFolder, entry.FullName));
+
+            // Zip Slip protection
+            if (!destinationPath.StartsWith(baseFull, StringComparison.OrdinalIgnoreCase))
+                throw new UnauthorizedAccessException("Archive contains invalid paths.");
+
+            // Directories
+            if (string.IsNullOrEmpty(entry.Name))
+            {
+                Directory.CreateDirectory(destinationPath);
+                continue;
+            }
+
+            Directory.CreateDirectory(Path.GetDirectoryName(destinationPath)!);
+
+            // No overwrite: pick a unique path
+            destinationPath = GetUniquePath(destinationPath);
+
+            entry.ExtractToFile(destinationPath, overwrite: false);
+        }
+    }
+}
+
+private static string GetUniquePath(string path)
+{
+    if (!File.Exists(path) && !Directory.Exists(path))
+        return path;
+
+    string directory = Path.GetDirectoryName(path) ?? "";
+    string filename = Path.GetFileNameWithoutExtension(path);
+    string extension = Path.GetExtension(path);
+
+    if (string.IsNullOrWhiteSpace(filename))
+        filename = "file";
+
+    for (int i = 1; i < 10000; i++)
+    {
+        string candidate = Path.Combine(directory, $"{filename} ({i}){extension}");
+        if (!File.Exists(candidate) && !Directory.Exists(candidate))
+            return candidate;
+    }
+
+    throw new IOException("Unable to create a unique extracted filename.");
+}
+
+/// <summary>
+/// Pulisce file temporanei in modo sicuro
+/// </summary>
         /// </summary>
         public static void CleanupTempFile(string filePath)
         {

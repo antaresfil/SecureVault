@@ -12,7 +12,6 @@ SecureVault follows these core security principles:
 
 1. **Defense in Depth**: Multiple layers of security (encryption, authentication, secure deletion)
 2. **Zero Knowledge**: No keys or secrets stored on disk
-3. **Open Standards**: Uses well-vetted, standardized algorithms (AES, Argon2, TOTP)
 4. **Fail Secure**: Errors result in operation failure, not security degradation
 5. **Minimal Trust**: Client-side only, no server dependencies
 
@@ -27,8 +26,6 @@ SecureVault follows these core security principles:
 ┌──────────────▼──────────────────────────┐
 │    Authentication Manager Layer         │
 │  • Password Processing                  │
-│  • TOTP Validation                      │
-│  • YubiKey Challenge-Response          │
 │  • Multi-Factor Key Derivation         │
 └──────────────┬──────────────────────────┘
                │
@@ -93,7 +90,6 @@ SecureVault follows these core security principles:
 - Side-channel attack resistance
 - GPU/ASIC attack resistance
 
-### 2.3 Time-Based One-Time Password: TOTP (RFC 6238)
 
 **Algorithm**: HMAC-SHA1 based Time-based OTP
 
@@ -115,12 +111,9 @@ SecureVault follows these core security principles:
 - Time-limited validity
 - Offline operation
 
-### 2.4 Hardware Authentication: YubiKey OATH
 
-**Protocol**: OATH-HOTP/TOTP via YubiKey
 
 **Implementation**:
-- Uses Yubico.NET.SDK
 - OATH challenge-response
 - Credential stored on hardware token
 
@@ -143,16 +136,9 @@ Step 1: Process Password
   else:
     factor1 = empty
 
-Step 2: Combine TOTP
-  if TOTP provided and valid:
-    factor2 = HMAC-SHA256(factor1, UTF8(totp_code))
   else:
     factor2 = factor1
 
-Step 3: Combine YubiKey
-  if YubiKey provided:
-    yubikey_response = YubiKey_OATH_Challenge(random_challenge)
-    factor3 = HMAC-SHA256(factor2, yubikey_response)
   else:
     factor3 = factor2
 
@@ -330,8 +316,6 @@ Delete file
 - **Mitigation**: AES-GCM authentication tag
 
 **5. Credential Theft**:
-- Attacker steals TOTP secret
-- Attacker steals YubiKey
 - **Mitigation**: Multi-factor requirement, hardware token
 
 ### 6.2 Threats Out of Scope
@@ -379,7 +363,6 @@ byte[] randomBytes = RandomNumberGenerator.GetBytes(32);
 - Checked for write permissions
 - Directory traversal prevention
 
-**TOTP Codes**:
 - Exactly 6 digits
 - Validated against current time window
 - ±1 step tolerance for clock drift
@@ -404,7 +387,6 @@ throw new UnauthorizedAccessException(
 
 // Bad: Reveals information
 throw new Exception("Password incorrect");
-throw new Exception("TOTP code invalid");
 ```
 
 ## 8. Known Limitations
@@ -434,16 +416,11 @@ throw new Exception("TOTP code invalid");
 - Minimal exposure time
 - Immediate cleanup
 
-### 8.3 YubiKey Dependency
 
-**Issue**: Specific YubiKey required for decryption
 
 **Implications**:
-- Lost YubiKey = lost access
-- YubiKey failure = lost access
 
 **Recommendation**:
-- Configure backup YubiKey with same credentials
 - Use multiple authentication factors
 - Test decryption before relying on encryption
 
@@ -454,7 +431,6 @@ throw new Exception("TOTP code invalid");
 - **AES**: FIPS 197
 - **AES-GCM**: NIST SP 800-38D
 - **Argon2**: RFC 9106
-- **TOTP**: RFC 6238
 - **HMAC**: FIPS 198-1
 
 ### 9.2 Industry Compliance
@@ -498,7 +474,6 @@ throw new Exception("TOTP code invalid");
 **Cryptographic Testing**:
 - Known answer tests for AES-GCM
 - Argon2id output verification
-- TOTP code validation
 
 **Security Testing**:
 - Fuzzing file format parser
@@ -507,7 +482,6 @@ throw new Exception("TOTP code invalid");
 
 **Integration Testing**:
 - Multi-factor combinations
-- YubiKey detection and usage
 - Secure deletion verification
 
 ## 11. Future Enhancements
@@ -532,7 +506,6 @@ SecureVault implements a defense-in-depth approach to file encryption:
 
 - **Strong Cryptography**: Military-grade AES-256-GCM
 - **Key Hardening**: Argon2id password hashing
-- **Multi-Factor Auth**: Password + TOTP + YubiKey
 - **Data Integrity**: Authenticated encryption
 - **Secure Deletion**: Multi-pass file overwrite
 
@@ -540,8 +513,6 @@ The system is designed with security best practices and follows established cryp
 
 **Remember**: Security is only as strong as the weakest link. Users must:
 - Choose strong passwords
-- Securely store TOTP secrets
-- Protect YubiKey devices
 - Keep backup credentials
 - Test decryption after encryption
 

@@ -99,16 +99,11 @@ namespace SecureVault
                 FileInfoPanel.Visibility = Visibility.Visible;
                 FileInfoText.Text = metadata.GetAuthenticationInfo();
                 
-                // Dettagli aggiuntivi
-                string details = $"File version: {metadata.Version} | ";
-                if (metadata.UsesPassword && metadata.UsesKeyfile)
-                    details += "You need BOTH password and the correct keyfile to decrypt this file.";
-                else if (metadata.UsesPassword)
-                    details += "You need the password to decrypt this file.";
-                else if (metadata.UsesKeyfile)
-                    details += "You need the keyfile to decrypt this file.";
-                
-                FileInfoDetails.Text = details;
+                // 
+// Dettagli aggiuntivi (privacy-preserving: do not disclose whether a keyfile was used)
+string details = $"File version: {metadata.Version} | Encrypted file. Enter your password and, if you used one, select the correct keyfile.";
+
+FileInfoDetails.Text = details;
             }
             else
             {

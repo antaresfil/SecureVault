@@ -18,8 +18,6 @@
    - .NET 8 Desktop Runtime installato
 
 ### Hardware Opzionale
-- **YubiKey 5 series** (per testare autenticazione hardware)
-- **Smartphone** con Google Authenticator (per testare TOTP)
 
 ## Setup del Progetto
 
@@ -95,9 +93,7 @@ SecureVault.exe
 4. **Clicca "Execute"**
 5. **Verifica**: File originale ripristinato
 
-### Test TOTP
 
-1. **Clicca "Generate New"** nella sezione TOTP
 2. **Copia il segreto** mostrato nel popup
 3. **Apri Google Authenticator** (smartphone)
 4. **Aggiungi account** → Inserisci segreto manualmente
@@ -106,32 +102,20 @@ SecureVault.exe
 7. **Torna all'app** e inserisci il codice a 6 cifre
 8. **Procedi con encryption/decryption**
 
-### Test YubiKey
 
 **Prerequisiti**:
-- YubiKey inserita
-- YubiKey Manager installato
-- OATH credential configurato su YubiKey
 
 **Procedura**:
-1. **Inserisci YubiKey** nella porta USB
-2. **Clicca "Detect YubiKey"**
-3. **Verifica messaggio**: "✓ YubiKey detected: Serial XXXXXX"
-4. **Spunta "Use YubiKey"**
 5. **Procedi con encryption/decryption**
 
 ### Test Multi-Fattore
 
 **Combinazione consigliata per test completo**:
 - Password: `SecureTest2024!`
-- TOTP: Generato e configurato in authenticator
-- YubiKey: Inserita e rilevata
 
 **Verifica**:
 1. File crittografato richiede TUTTI i fattori per decryption
 2. Password sbagliata → Errore
-3. TOTP code sbagliato → Errore
-4. YubiKey diversa → Errore
 
 ### Test Secure Deletion
 
@@ -227,11 +211,9 @@ dotnet nuget locals all --clear
 dotnet restore
 ```
 
-### Errore: "Yubico.NET.SDK not found"
 **Soluzione**:
 ```bash
 # Manually install package
-dotnet add package Yubico.NET.SDK --version 1.11.0
 ```
 
 ### Errore: "WPF not supported"
@@ -259,7 +241,6 @@ dotnet add package Yubico.NET.SDK --version 1.11.0
 - [ ] Memoria pulita dopo uso (ZeroMemory)
 - [ ] Errori non rivelano info sensibili
 - [ ] File format validato
-- [ ] TOTP time window corretto
 - [ ] Random number generation sicuro
 
 ### User Experience Checklist

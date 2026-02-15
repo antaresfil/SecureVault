@@ -18,8 +18,8 @@
         <Border Grid.Row="0" Background="#1976D2" Padding="30,25">
             <StackPanel HorizontalAlignment="Center">
                 <TextBlock Text="🔒 SecureVault" FontSize="32" FontWeight="Bold" Foreground="White" HorizontalAlignment="Center"/>
-                <TextBlock Text="Multi-Factor File Encryption System" FontSize="14" Foreground="#E3F2FD" Margin="0,5,0,0" HorizontalAlignment="Center"/>
-                <TextBlock x:Name="VersionText" Text="Version 1.0.7 - February 13, 2026" FontSize="13" Foreground="#B3E5FC" Margin="0,8,0,0" HorizontalAlignment="Center" FontWeight="SemiBold"/>
+                <TextBlock Text="File Encryption Utility" FontSize="14" Foreground="#E3F2FD" Margin="0,5,0,0" HorizontalAlignment="Center"/>
+                <TextBlock x:Name="VersionText" Text="Version" FontSize="13" Foreground="#B3E5FC" Margin="0,8,0,0" HorizontalAlignment="Center" FontWeight="SemiBold"/>
             </StackPanel>
         </Border>
 

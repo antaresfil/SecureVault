@@ -25,61 +25,76 @@ namespace SecureVault.Core
         /// <summary>
         /// Encrypts a file with multi-factor derived key
         /// </summary>
+        
         public static void EncryptFile(string inputPath, string outputPath, byte[] masterKey, bool usedKeyfile)
         {
+            // NOTE: SecureVault no longer stores (or reveals) whether a keyfile was used.
+            // If the user chose a keyfile, it must already be incorporated into masterKey by AuthenticationManager.
+
             // Generate random salt and nonce
             byte[] salt = RandomNumberGenerator.GetBytes(SaltSize);
             byte[] nonce = RandomNumberGenerator.GetBytes(NonceSize);
-            
+
             // Derive encryption key using Argon2id
             byte[] encryptionKey = DeriveKey(masterKey, salt);
-            
+
             try
             {
                 // Read input file
-                byte[] plaintext = File.ReadAllBytes(inputPath);
-                
-                // Encrypt with AES-256-GCM
+                byte[] fileBytes = File.ReadAllBytes(inputPath);
+
+                // Build plaintext package: [u16 filenameLen][filenameUtf8][fileBytes]
+                byte[] filenameBytes = Encoding.UTF8.GetBytes(Path.GetFileName(inputPath));
+                if (filenameBytes.Length > ushort.MaxValue)
+                    throw new InvalidOperationException("Filename too long.");
+
+                int plaintextLen = 2 + filenameBytes.Length + fileBytes.Length;
+                byte[] plaintext = new byte[plaintextLen];
+
+                // Write filename length (little-endian) + filename + file bytes
+                BitConverter.TryWriteBytes(plaintext.AsSpan(0, 2), (ushort)filenameBytes.Length);
+                Buffer.BlockCopy(filenameBytes, 0, plaintext, 2, filenameBytes.Length);
+                Buffer.BlockCopy(fileBytes, 0, plaintext, 2 + filenameBytes.Length, fileBytes.Length);
+
+                // Encrypt with AES-256-GCM (v3 uses AAD to authenticate the header)
                 byte[] ciphertext = new byte[plaintext.Length];
                 byte[] tag = new byte[TagSize];
-                
+
+                byte[] aad = BuildAadV3(salt, nonce);
+
                 using (var aes = new AesGcm(encryptionKey, TagSize))
                 {
-                    aes.Encrypt(nonce, plaintext, ciphertext, tag);
+                    aes.Encrypt(nonce, plaintext, ciphertext, tag, aad);
                 }
-                
-                // Write encrypted file with header
-                using (var fs = new FileStream(outputPath, FileMode.Create, FileAccess.Write))
+
+                // Determine output path and prevent overwrite
+                string finalOutputPath = outputPath;
+                if (Directory.Exists(outputPath))
+                {
+                    finalOutputPath = Path.Combine(outputPath, Path.GetFileName(inputPath) + ".svlt");
+                }
+                finalOutputPath = GetUniquePath(finalOutputPath);
+
+                // Write encrypted file with header (v3)
+                using (var fs = new FileStream(finalOutputPath, FileMode.CreateNew, FileAccess.Write, FileShare.None))
                 using (var bw = new BinaryWriter(fs))
                 {
-                    // Magic header for verification
-                    bw.Write(Encoding.ASCII.GetBytes("SVLT")); // SecureVault signature
-                    bw.Write((byte)2); // Version
+                    bw.Write(Encoding.ASCII.GetBytes("SVLT")); // signature
+                    bw.Write((byte)3); // Version 3 (AAD + encrypted filename)
 
-                    // Flags
-                    // bit0: password (always 1)
-                    // bit1: keyfile used
-                    byte flags = 0x01;
-                    if (usedKeyfile) flags |= 0x02;
-                    bw.Write(flags);
-                    
-                    // Crypto parameters
                     bw.Write(salt);
                     bw.Write(nonce);
                     bw.Write(tag);
-                    
-                    // Original filename (encrypted separately for metadata protection)
-                    byte[] filenameBytes = Encoding.UTF8.GetBytes(Path.GetFileName(inputPath));
-                    bw.Write((ushort)filenameBytes.Length);
-                    bw.Write(filenameBytes);
-                    
-                    // Encrypted data
+
+                    // Encrypted payload (includes encrypted filename)
                     bw.Write(ciphertext);
                 }
-                
+
                 // Secure cleanup
+                CryptographicOperations.ZeroMemory(fileBytes);
                 CryptographicOperations.ZeroMemory(plaintext);
                 CryptographicOperations.ZeroMemory(ciphertext);
+                CryptographicOperations.ZeroMemory(filenameBytes);
             }
             finally
             {
@@ -90,6 +105,8 @@ namespace SecureVault.Core
         /// <summary>
         /// Reads metadata from an encrypted file without decrypting it
         /// </summary>
+        /// </summary>
+        
         public static FileMetadata ReadFileMetadata(string filePath)
         {
             if (!File.Exists(filePath))
@@ -97,35 +114,23 @@ namespace SecureVault.Core
 
             try
             {
-                using (var fs = new FileStream(filePath, FileMode.Open, FileAccess.Read))
+                using (var fs = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read))
                 using (var br = new BinaryReader(fs))
                 {
                     // Verify magic header
                     byte[] magic = br.ReadBytes(4);
-                    if (Encoding.ASCII.GetString(magic) != "SVLT")
+                    if (magic.Length != 4 || Encoding.ASCII.GetString(magic) != "SVLT")
                         return null; // Not a SecureVault file
 
                     byte version = br.ReadByte();
-                    
-                    byte flags = 0x01;
-                    if (version >= 2)
-                    {
-                        flags = br.ReadByte();
-                    }
-                    else if (version != 1)
-                    {
-                        return null; // Unsupported version
-                    }
+                    if (version != 1 && version != 2 && version != 3)
+                        return null;
 
-                    bool usesPassword = (flags & 0x01) != 0;
-                    bool usesKeyfile = (flags & 0x02) != 0;
-
+                    // SecureVault deliberately does NOT expose whether a keyfile was used.
                     return new FileMetadata
                     {
                         IsValid = true,
-                        Version = version,
-                        UsesPassword = usesPassword,
-                        UsesKeyfile = usesKeyfile
+                        Version = version
                     };
                 }
             }
@@ -136,125 +141,134 @@ namespace SecureVault.Core
         }
 
         /// <summary>
-        /// Metadata information about an encrypted file
-        /// </summary>
-        public class FileMetadata
-        {
-            public bool IsValid { get; set; }
-            public byte Version { get; set; }
-            public bool UsesPassword { get; set; }
-            public bool UsesKeyfile { get; set; }
-
-            public string GetAuthenticationInfo()
-            {
-                if (!IsValid)
-                    return "Not a valid SecureVault file";
-
-                if (UsesPassword && UsesKeyfile)
-                    return "🔐 Password + Keyfile required";
-                else if (UsesPassword)
-                    return "🔑 Password only";
-                else if (UsesKeyfile)
-                    return "🔐 Keyfile only";
-                else
-                    return "⚠️ Unknown authentication";
-            }
-        }
-
-        /// <summary>
-        /// Decrypts a file with multi-factor derived key
+        /// Decrypts a file with the derived key (password + optional keyfile).
+        /// SecureVault does NOT reveal whether a keyfile was used; the user must remember it.
         /// </summary>
         public static void DecryptFile(string inputPath, string outputPath, byte[] masterKey, byte[]? keyFileBytes)
         {
-            using (var fs = new FileStream(inputPath, FileMode.Open, FileAccess.Read))
+            using (var fs = new FileStream(inputPath, FileMode.Open, FileAccess.Read, FileShare.Read))
             using (var br = new BinaryReader(fs))
             {
                 // Verify magic header
                 byte[] magic = br.ReadBytes(4);
-                if (Encoding.ASCII.GetString(magic) != "SVLT")
+                if (magic.Length != 4 || Encoding.ASCII.GetString(magic) != "SVLT")
                     throw new InvalidDataException("Invalid encrypted file format");
-                
-                // BUG FIX #1: Leggi la versione PRIMA di usarla
+
                 byte version = br.ReadByte();
-                
-                // BUG FIX #2: Gestisci correttamente versione 1 e 2
-                byte flags = 0x01; // Default per versione 1 (solo password)
-                if (version >= 2)
-                {
-                    flags = br.ReadByte();
-                }
-                else if (version != 1)
-                {
+                if (version != 1 && version != 2 && version != 3)
                     throw new InvalidDataException($"Unsupported file version: {version}");
+
+                // v2 includes a flags byte (ignored for privacy); v1 and v3 do not
+                if (version == 2)
+                {
+                    _ = br.ReadByte(); // flags (ignored)
                 }
-                
-                // BUG FIX #3: Verifica keyfile PRIMA di leggere i dati
-                bool requiresKeyfile = (flags & 0x02) != 0;
-                if (requiresKeyfile && (keyFileBytes == null || keyFileBytes.Length == 0))
-                    throw new UnauthorizedAccessException("This file was encrypted with a keyfile. Please provide the correct keyfile.");
-                
+
                 // Read crypto parameters
                 byte[] salt = br.ReadBytes(SaltSize);
                 byte[] nonce = br.ReadBytes(NonceSize);
                 byte[] tag = br.ReadBytes(TagSize);
-                
-                // Read original filename
-                ushort filenameLength = br.ReadUInt16();
-                byte[] filenameBytes = br.ReadBytes(filenameLength);
-                string originalFilename = Encoding.UTF8.GetString(filenameBytes);
-                
-                // Read encrypted data
+
+                string originalFilename = "";
+                if (version <= 2)
+                {
+                    // v1/v2 store filename in cleartext (legacy). We still sanitize it before use.
+                    ushort filenameLength = br.ReadUInt16();
+                    byte[] filenameBytes = br.ReadBytes(filenameLength);
+                    originalFilename = Encoding.UTF8.GetString(filenameBytes);
+                }
+
+                // Read encrypted payload
                 byte[] ciphertext = br.ReadBytes((int)(fs.Length - fs.Position));
-                
+
                 // Derive decryption key
                 byte[] decryptionKey = DeriveKey(masterKey, salt);
-                
+
                 try
                 {
-                    // Decrypt with AES-256-GCM
                     byte[] plaintext = new byte[ciphertext.Length];
-                    
+
                     using (var aes = new AesGcm(decryptionKey, TagSize))
                     {
-                        aes.Decrypt(nonce, ciphertext, tag, plaintext);
+                        if (version == 3)
+                        {
+                            byte[] aad = BuildAadV3(salt, nonce);
+                            aes.Decrypt(nonce, ciphertext, tag, plaintext, aad);
+                        }
+                        else
+                        {
+                            aes.Decrypt(nonce, ciphertext, tag, plaintext);
+                        }
                     }
-                    
-                    // Determine output path
+
+                    byte[] fileBytesToWrite;
+                    if (version == 3)
+                    {
+                        // Plaintext package: [u16 filenameLen][filenameUtf8][fileBytes]
+                        if (plaintext.Length < 2)
+                            throw new InvalidDataException("Corrupted encrypted payload");
+
+                        ushort fnLen = BitConverter.ToUInt16(plaintext, 0);
+                        if (2 + fnLen > plaintext.Length)
+                            throw new InvalidDataException("Corrupted encrypted payload");
+
+                        byte[] fnBytes = new byte[fnLen];
+                        Buffer.BlockCopy(plaintext, 2, fnBytes, 0, fnLen);
+                        originalFilename = Encoding.UTF8.GetString(fnBytes);
+
+                        int fileLen = plaintext.Length - (2 + fnLen);
+                        fileBytesToWrite = new byte[fileLen];
+                        Buffer.BlockCopy(plaintext, 2 + fnLen, fileBytesToWrite, 0, fileLen);
+
+                        CryptographicOperations.ZeroMemory(fnBytes);
+                    }
+                    else
+                    {
+                        // v1/v2 plaintext is the full file bytes
+                        fileBytesToWrite = plaintext;
+                    }
+
+                    // Determine output path safely
                     string finalOutputPath = outputPath;
                     if (Directory.Exists(outputPath))
                     {
-                        finalOutputPath = Path.Combine(outputPath, originalFilename);
+                        string safeName = SanitizeFilename(originalFilename);
+                        if (string.IsNullOrWhiteSpace(safeName))
+                        {
+                            safeName = Path.GetFileNameWithoutExtension(inputPath);
+                            if (string.IsNullOrWhiteSpace(safeName))
+                                safeName = "decrypted";
+                        }
+
+                        finalOutputPath = Path.Combine(outputPath, safeName);
+                        finalOutputPath = EnsurePathIsWithinDirectory(outputPath, finalOutputPath);
                     }
-                    
-                    // Write decrypted file
-                    File.WriteAllBytes(finalOutputPath, plaintext);
-                    
+
+                    finalOutputPath = GetUniquePath(finalOutputPath);
+
+                    // Write decrypted file without overwriting
+                    using (var outFs = new FileStream(finalOutputPath, FileMode.CreateNew, FileAccess.Write, FileShare.None))
+                    {
+                        outFs.Write(fileBytesToWrite, 0, fileBytesToWrite.Length);
+                    }
+
                     // Secure cleanup
+                    CryptographicOperations.ZeroMemory(fileBytesToWrite);
                     CryptographicOperations.ZeroMemory(plaintext);
                 }
                 catch (CryptographicException)
                 {
-                    // BUG FIX #5: Messaggio più chiaro per distinguere i problemi
-                    if (requiresKeyfile && keyFileBytes != null && keyFileBytes.Length > 0)
-                    {
-                        throw new UnauthorizedAccessException(
-                            "Decryption failed!\n\n" +
-                            "Possible causes:\n" +
-                            "• Incorrect password\n" +
-                            "• Wrong keyfile selected\n" +
-                            "• File corrupted or tampered\n\n" +
-                            "Please verify your password and keyfile are correct.");
-                    }
-                    else
-                    {
-                        throw new UnauthorizedAccessException(
-                            "Decryption failed!\n\n" +
-                            "Possible causes:\n" +
-                            "• Incorrect password\n" +
-                            "• File corrupted or tampered\n\n" +
-                            "Please verify your password is correct.");
-                    }
-                }
+                    // Privacy-preserving message: do NOT reveal if a keyfile was used.
+                    throw new UnauthorizedAccessException(@"Decryption failed!
+
+Possible causes:
+
+• Incorrect password
+• Missing or wrong keyfile (if you used one)
+• File corrupted or tampered
+
+Please verify your inputs and try again.");
+}
                 finally
                 {
                     CryptographicOperations.ZeroMemory(decryptionKey);
@@ -265,6 +279,7 @@ namespace SecureVault.Core
 
         /// <summary>
         /// Derives a 256-bit key using Argon2id
+        /// </summary>
         /// </summary>
         private static byte[] DeriveKey(byte[] password, byte[] salt)
         {
@@ -279,7 +294,73 @@ namespace SecureVault.Core
             }
         }
 
-        /// <summary>
+        
+private static byte[] BuildAadV3(byte[] salt, byte[] nonce)
+{
+    // AAD = magic + version + salt + nonce
+    byte[] aad = new byte[4 + 1 + SaltSize + NonceSize];
+    Buffer.BlockCopy(Encoding.ASCII.GetBytes("SVLT"), 0, aad, 0, 4);
+    aad[4] = 3;
+    Buffer.BlockCopy(salt, 0, aad, 5, SaltSize);
+    Buffer.BlockCopy(nonce, 0, aad, 5 + SaltSize, NonceSize);
+    return aad;
+}
+
+private static string SanitizeFilename(string filename)
+{
+    // Strip any path components
+    string name = Path.GetFileName(filename ?? string.Empty);
+
+    // Remove invalid filename chars
+    foreach (char c in Path.GetInvalidFileNameChars())
+    {
+        name = name.Replace(c.ToString(), string.Empty);
+    }
+
+    // Prevent empty/whitespace
+    name = name.Trim();
+    return name;
+}
+
+private static string EnsurePathIsWithinDirectory(string baseDirectory, string candidatePath)
+{
+    string baseFull = Path.GetFullPath(baseDirectory);
+    if (!baseFull.EndsWith(Path.DirectorySeparatorChar))
+        baseFull += Path.DirectorySeparatorChar;
+
+    string candidateFull = Path.GetFullPath(candidatePath);
+
+    if (!candidateFull.StartsWith(baseFull, StringComparison.OrdinalIgnoreCase))
+        throw new UnauthorizedAccessException("Invalid output path.");
+
+    return candidateFull;
+}
+
+private static string GetUniquePath(string path)
+{
+    // If path doesn't exist, keep it.
+    if (!File.Exists(path) && !Directory.Exists(path))
+        return path;
+
+    string directory = Path.GetDirectoryName(path) ?? "";
+    string filename = Path.GetFileNameWithoutExtension(path);
+    string extension = Path.GetExtension(path);
+
+    // Fallback if no filename
+    if (string.IsNullOrWhiteSpace(filename))
+        filename = "output";
+
+    for (int i = 1; i < 10000; i++)
+    {
+        string candidate = Path.Combine(directory, $"{filename} ({i}){extension}");
+        if (!File.Exists(candidate) && !Directory.Exists(candidate))
+            return candidate;
+    }
+
+    throw new IOException("Unable to create a unique output filename.");
+}
+
+/// <summary>
         /// Securely deletes original file by overwriting with random data
         /// </summary>
         public static void SecureDelete(string filePath, int passes = 3)
